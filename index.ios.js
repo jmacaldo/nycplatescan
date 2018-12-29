@@ -6,7 +6,8 @@ import {
   View,
   StatusBar,
   TouchableOpacity,
-  Button
+  Button,
+  ScrollView
 } from 'react-native';
 import axios from 'axios'
 
@@ -14,12 +15,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Camera from 'react-native-openalpr';
 
 const styles = StyleSheet.create({
-  textContainer: {
-    position: 'absolute',
-    top: 100,
-    right: 50,
-    bottom: 0,
-  },
   text: {
     textAlign: 'center',
     fontSize: 20,
@@ -27,18 +22,6 @@ const styles = StyleSheet.create({
   preview: {
     flex: 1,
     justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  overlay: {
-    position: 'absolute',
-    padding: 16,
-    alignItems: 'center',
-  },
-  topOverlay: {
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 255, 0, 0.4)',
     alignItems: 'center',
   },
   found: {
@@ -59,11 +42,32 @@ const styles = StyleSheet.create({
   mainPlate: {
     fontSize: 35
   },
-  touchableSearch: {
-    flexDirection: "row"
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-start"
   },
-  resList: {
-    flexGrow: 1
+  buttonSearch: {
+    backgroundColor: "green",
+    padding: 20,
+    margin: 10
+  },
+  buttonReset: {
+    backgroundColor: "red",
+    padding: 20,
+    margin: 10
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 20
+  },
+  resultsScroll:{
+    height: 400,
+    //backgroundColor: "red"
+  },
+  found: {
+    height: 75,
+    //backgroundColor: "blue"
   }
 });
 
@@ -85,7 +89,6 @@ export default class AwesomeProject extends React.Component {
 
 
   fetchRequest = () => {
-    console.log('fetch fired!', this.state.plate);
     axios.get('https://data.cityofnewyork.us/resource/uvbq-3m68.json', {
       params: {
         $limit: 5000,
@@ -113,17 +116,63 @@ export default class AwesomeProject extends React.Component {
     }
   }
 
-  searchHandler = () => {
-    console.log('search button pressed!');
-    this.fetchRequest()
+  reset = () => {
+    console.log('reset pushed!');
+    this.setState({
+      found: false,
+      plate: "SCAN A PLATE",
+      data: []
+    })
   }
 
+
   render() {
+
+
+
     const results = () => {
       if (this.state.data.length >= 0) {
         return "No records found"
       } else {
-        return "Records Found"
+        return this.state.data.data.map((item, key)=>(
+          <View key={key}>
+            <Text>({item.issue_date})${item.fine_amount}{' '}{item.violation}</Text>
+          </View>
+        ) )
+      }
+    }
+
+    const totalFines = () =>{
+      if (this.state.data.data) {
+        let arr = [0]
+         this.state.data.data.map((item) => (
+            arr.push(parseInt(item.fine_amount, 10))
+         ))
+
+        function cleanArray(arr) {
+          var newArray = new Array();
+          for (var i = 0; i < arr.length; i++) {
+            if (arr[i]) {
+              newArray.push(arr[i]);
+            }
+          }
+          newArray.push(0)
+          return newArray;
+        }
+
+        const add = (a, b) => a + b
+
+        let total = cleanArray(arr).reduce(add)
+
+        const numberWithCommas = (x) => {
+          var parts = x.toString().split(".");
+          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+          return parts.join(".");
+        }
+
+
+        let fines = numberWithCommas(total)
+        return fines
       }
     }
     return (
@@ -149,26 +198,29 @@ export default class AwesomeProject extends React.Component {
           />
         </View>
         <View style={styles.results}>
-          {!this.state.found &&
-            <Text style={styles.main}>SCAN A PLATE</Text>
-          }
-          {this.state.found &&
-            <Text style={styles.main}>PLATE FOUND!</Text>
-          }
+          <Text style={styles.main}>{this.state.plate}</Text>
 
           {this.state.found &&
             <View style={styles.found}>
-              <Text style={styles.mainPlate}>{this.state.plate}</Text>
-              <Button color="#841584" onPress={this.searchHandler} title="Search traffic records"/>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.buttonSearch} onPress={this.fetchRequest}>
+                  <Text style={styles.buttonText}>Search</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.buttonReset} onPress={this.reset}>
+                  <Text style={styles.buttonText}>Reset</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           }
 
-          {this.state.data.length == 0 &&
-            <View style={styles.resList}>
-              <Text>
-                Tickets found!
-              </Text>
-            </View>
+          {this.state.data.data &&
+            <ScrollView style={styles.resultsScroll}>
+              <Text style={{fontWeight: 'bold'}}>{this.state.data.data.length} violations found. Total fines: ${totalFines()}</Text>
+              <View style={styles.resList}>
+                  {results()}
+              </View>
+            </ScrollView>
+
           }
 
         </View>
