@@ -81,7 +81,8 @@ export default class AwesomeProject extends React.Component {
       camera: {
         aspect: Camera.constants.Aspect.fill,
       },
-      plate: 'SCAN A PLATE',
+      state: 'NY',
+      plate:  'SCAN A PLATE',
       found: false,
       data: []
     };
@@ -94,7 +95,7 @@ export default class AwesomeProject extends React.Component {
         $limit: 5000,
         $$app_token: '82HqD0isylvN2iMSeu6YMUOUU',
         plate: this.state.plate,
-        state: 'NY',
+        state: this.state.state,
         $order: ':id DESC',
         $order: 'summons_number DESC',
 
@@ -125,18 +126,20 @@ export default class AwesomeProject extends React.Component {
     })
   }
 
+  stateButton = (state) => {
+    console.log(state);
+    this.setState({state: state})
+  }
+
 
   render() {
-
-
-
     const results = () => {
       if (this.state.data.length >= 0) {
         return "No records found"
       } else {
         return this.state.data.data.map((item, key)=>(
           <View key={key}>
-            <Text>({item.issue_date})${item.fine_amount}{' '}{item.violation}</Text>
+            <Text style={{fontSize: 18}}>({item.issue_date})${item.fine_amount}{' '}{item.violation}</Text>
           </View>
         ) )
       }
@@ -169,12 +172,11 @@ export default class AwesomeProject extends React.Component {
           parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
           return parts.join(".");
         }
-
-
         let fines = numberWithCommas(total)
         return fines
       }
     }
+
     return (
       <View style={styles.container}>
         <View style={styles.camera}>
@@ -198,7 +200,13 @@ export default class AwesomeProject extends React.Component {
           />
         </View>
         <View style={styles.results}>
-          <Text style={styles.main}>{this.state.plate}</Text>
+          <Text style={styles.main}>{this.state.plate}({this.state.state})</Text>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity onPress={()=>this.stateButton('NY')} style={styles.buttonSearch}><Text style={styles.buttonText}>NY</Text></TouchableOpacity>
+            <TouchableOpacity onPress={()=>this.stateButton('NJ')} style={styles.buttonSearch}><Text style={styles.buttonText}>NJ</Text></TouchableOpacity>
+            <TouchableOpacity onPress={()=>this.stateButton('CT')} style={styles.buttonSearch}><Text style={styles.buttonText}>CT</Text></TouchableOpacity>
+            <TouchableOpacity onPress={()=>this.stateButton('DP')} style={styles.buttonSearch}><Text style={styles.buttonText}>DP</Text></TouchableOpacity>
+          </View>
 
           {this.state.found &&
             <View style={styles.found}>
@@ -215,7 +223,7 @@ export default class AwesomeProject extends React.Component {
 
           {this.state.data.data &&
             <ScrollView style={styles.resultsScroll}>
-              <Text style={{fontWeight: 'bold'}}>{this.state.data.data.length} violations found. Total fines: ${totalFines()}</Text>
+              <Text style={{fontWeight: 'bold', fontSize: 20}}>{this.state.data.data.length} violations found. Total fines: ${totalFines()}</Text>
               <View style={styles.resList}>
                   {results()}
               </View>
